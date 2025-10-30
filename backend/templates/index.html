@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Parking Space Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>🚗 Real-Time Parking Space Detection</h1>
+
+  <div class="video-container">
+    <img src="{{ url_for('video_feed') }}" alt="Video Stream" id="video-stream">
+  </div>
+
+  <div class="stats">
+    <p><strong>Cars:</strong> <span id="car-count">0</span></p>
+    <p><strong>Free Spaces:</strong> <span id="free-count">0</span></p>
+  </div>
+
+  <script>
+    async function updateCounts() {
+      const res = await fetch('/latest_data');
+      const data = await res.json();
+      document.getElementById('car-count').innerText = data.cars;
+      document.getElementById('free-count').innerText = data.free_spaces;
+    }
+    setInterval(updateCounts, 1000);
+  </script>
+</body>
+</html>
