@@ -2,29 +2,149 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Parking Space Detection</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <title>Smart Parking Visualization</title>
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      margin-top: 20px;
+      color: #00ffcc;
+    }
+    #counts {
+      font-size: 1.2em;
+      margin-top: 10px;
+      color: #f1f1f1;
+    }
+    #svg-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+      width: 100%;
+      height: 80vh;
+    }
+    svg {
+      border: 2px solid #333;
+      background-color: #222;
+      width: 90%;
+      height: 100%;
+    }
+    .slot {
+      stroke: white;
+      stroke-width: 1;
+      cursor: pointer;
+      transition: 0.3s;
+      opacity: 0.85;
+    }
+    .slot:hover {
+      opacity: 1;
+      stroke-width: 2;
+    }
+    #legend {
+      margin-top: 10px;
+      font-size: 1.1em;
+    }
+    .legend-item {
+      display: inline-block;
+      margin: 0 10px;
+    }
+    .legend-box {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-right: 5px;
+    }
+  </style>
 </head>
 <body>
-  <h1>🚗 Real-Time Parking Space Detection</h1>
+  <h1>🅿️ Real-Time Parking Lot Status</h1>
 
-  <div class="video-container">
-    <img src="{{ url_for('video_feed') }}" alt="Video Stream" id="video-stream">
+  <div id="counts">Free: 0 | Occupied: 0</div>
+
+  <div id="svg-container">
+    <svg id="parking-lot" preserveAspectRatio="xMidYMid meet"></svg>
   </div>
 
-  <div class="stats">
-    <p><strong>Cars:</strong> <span id="car-count">0</span></p>
-    <p><strong>Free Spaces:</strong> <span id="free-count">0</span></p>
+  <div id="legend">
+    <div class="legend-item">
+      <span class="legend-box" style="background-color:#2ecc71;"></span> Free
+    </div>
+    <div class="legend-item">
+      <span class="legend-box" style="background-color:#e74c3c;"></span> Occupied
+    </div>
   </div>
 
   <script>
-    async function updateCounts() {
-      const res = await fetch('/latest_data');
-      const data = await res.json();
-      document.getElementById('car-count').innerText = data.cars;
-      document.getElementById('free-count').innerText = data.free_spaces;
+    const svg = document.getElementById("parking-lot");
+    const countsDiv = document.getElementById("counts");
+    let slotPolygons = {};
+
+    // === Step 1: Load parking slot shapes ===
+    async function loadSpots() {
+      const res = await fetch('/spots_data');
+      const spots = await res.json();
+
+      // Compute bounding box for auto-scaling
+      let allX = [], allY = [];
+      Object.values(spots).forEach(coords => {
+        coords.forEach(([x, y]) => {
+          allX.push(x);
+          allY.push(y);
+        });
+      });
+      const minX = Math.min(...allX);
+      const minY = Math.min(...allY);
+      const maxX = Math.max(...allX);
+      const maxY = Math.max(...allY);
+      svg.setAttribute("viewBox", `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
+
+      // Draw polygons
+      Object.entries(spots).forEach(([id, coords]) => {
+        const points = coords.map(p => p.join(',')).join(' ');
+        const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+        poly.setAttribute("points", points);
+        poly.setAttribute("id", id);
+        poly.classList.add("slot");
+        poly.setAttribute("fill", "#333");
+        svg.appendChild(poly);
+        slotPolygons[id] = poly;
+      });
     }
-    setInterval(updateCounts, 1000);
+
+    // === Step 2: Update slot colors + counts ===
+    async function updateSlots() {
+      const res = await fetch('/slots');
+      const data = await res.json();
+
+      let freeCount = 0;
+      let occCount = 0;
+
+      Object.entries(data).forEach(([id, status]) => {
+        const poly = slotPolygons[id];
+        if (!poly) return;
+        if (status === "free") {
+          poly.setAttribute("fill", "#2ecc71");
+          freeCount++;
+        } else {
+          poly.setAttribute("fill", "#e74c3c");
+          occCount++;
+        }
+      });
+
+      countsDiv.textContent = `Free: ${freeCount} | Occupied: ${occCount}`;
+    }
+
+    // === Initialize visualization ===
+    loadSpots().then(() => {
+      updateSlots();
+      setInterval(updateSlots, 2000);
+    });
   </script>
 </body>
 </html>

@@ -3,3 +3,5 @@ torch
 ultralytics
 opencv-python
 pymongo
+shapely
+numpy
