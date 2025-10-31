@@ -111,14 +111,9 @@ Visit **http://127.0.0.1:5000** to open the dashboard.
 
 | Name | Role | Contribution |
 |------|------|---------------|
-| **Inesh S T** | Developer & Researcher | Model training, full-stack development, deployment |
-| **[Anirudh R](https://github.com/anirudhr04)** | Collaborator | Frontend integration, Flask & visualization debugging |
+| **Inesh S T** | Developer & Researcher | Model training, Flask & visualization debugging, deployment |
+| **[Anirudh R](https://github.com/anirudhr04)** | Collaborator | Frontend integration, full-stack development|
 
----
-
-## 🏁 License
-
-This project is licensed under the **MIT License** — feel free to use, modify, and distribute with attribution.
 
 ---
 
